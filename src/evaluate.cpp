@@ -624,7 +624,7 @@ namespace {
 
     Score score = SCORE_ZERO;
 
-    if (pos.count_in_hand(Us, pt))
+    if (pos.count_in_hand(Us, pt) > 0)
     {
         Bitboard b = pos.drop_region(Us, pt) & ~pos.pieces() & (~attackedBy2[Them] | attackedBy[Us][ALL_PIECES]);
         if ((b & kingRing[Them]) && pt != SHOGI_PAWN)
@@ -647,6 +647,11 @@ namespace {
 
         if (pt == SHOGI_PAWN && !pos.shogi_doubled_pawn())
             score -= make_score(50, 20) * std::max(pos.count_with_hand(Us, SHOGI_PAWN) - pos.max_file() - 1, 0);
+    }
+    else if (pos.count_in_hand(Us, pt) < 0)
+    {
+        // Penalize drops of virtual pieces
+        score += (PSQT::psq[make_piece(WHITE, pt)][SQ_NONE] + make_score(1000, 1000)) * pos.count_in_hand(Us, pt);
     }
 
     return score;
@@ -686,7 +691,7 @@ namespace {
     b2 = attacks_bb<BISHOP>(ksq, pos.pieces() ^ pos.pieces(Us, QUEEN));
 
     std::function <Bitboard (Color, PieceType)> get_attacks = [this](Color c, PieceType pt) {
-        return attackedBy[c][pt] | (pos.piece_drops() && pos.count_in_hand(c, pt) ? pos.drop_region(c, pt) & ~pos.pieces() : Bitboard(0));
+        return attackedBy[c][pt] | (pos.piece_drops() && pos.count_in_hand(c, pt) > 0 ? pos.drop_region(c, pt) & ~pos.pieces() : Bitboard(0));
     };
     for (PieceType pt : pos.piece_types())
     {
@@ -715,7 +720,7 @@ namespace {
                 unsafeChecks |= knightChecks;
             break;
         case PAWN:
-            if (pos.piece_drops() && pos.count_in_hand(Them, pt))
+            if (pos.piece_drops() && pos.count_in_hand(Them, pt) > 0)
             {
                 pawnChecks = attacks_bb(Us, pt, ksq, pos.pieces()) & ~pos.pieces() & pos.board_bb();
                 if (pawnChecks & safe)
@@ -740,7 +745,7 @@ namespace {
     if (pos.two_boards() && pos.piece_drops())
     {
         for (PieceType pt : pos.piece_types())
-            if (!pos.count_in_hand(Them, pt) && (attacks_bb(Us, pt, ksq, pos.pieces()) & safe & pos.drop_region(Them, pt) & ~pos.pieces()))
+            if (pos.count_in_hand(Them, pt) <= 0 && (attacks_bb(Us, pt, ksq, pos.pieces()) & safe & pos.drop_region(Them, pt) & ~pos.pieces()))
             {
                 kingDanger += VirtualCheck * 500 / (500 + PieceValue[MG][pt]);
                 // Presumably a mate threat

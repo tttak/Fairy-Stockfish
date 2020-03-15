@@ -651,7 +651,10 @@ const string Position::fen(bool sfen, bool showPromoted, int countStarted, std::
       else
           for (Color c : {WHITE, BLACK})
               for (PieceType pt = KING; pt >= PAWN; --pt)
+              {
+                  assert(pieceCountInHand[c][pt] >= 0);
                   ss << std::string(pieceCountInHand[c][pt], piece_to_char()[make_piece(c, pt)]);
+              }
       ss << ']';
   }
 
@@ -881,7 +884,7 @@ bool Position::legal(Move m) const {
   }
 
   // Illegal non-drop moves
-  if (must_drop() && type_of(m) != DROP && count_in_hand(us, var->mustDropType))
+  if (must_drop() && type_of(m) != DROP && count_in_hand(us, var->mustDropType) > 0)
   {
       if (checkers())
       {
@@ -1026,7 +1029,7 @@ bool Position::pseudo_legal(const Move m) const {
       return   piece_drops()
             && pc != NO_PIECE
             && color_of(pc) == us
-            && count_in_hand(us, in_hand_piece_type(m))
+            && (count_in_hand(us, in_hand_piece_type(m)) > 0 || (two_boards() && virtual_drop(us, type_of(pc))))
             && (drop_region(us, type_of(pc)) & ~pieces() & to)
             && (   type_of(pc) == in_hand_piece_type(m)
                 || (drop_promoted() && type_of(pc) == promoted_piece_type(in_hand_piece_type(m))));
@@ -1586,7 +1589,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
           st->gatesBB[us] ^= to_sq(m);
       if (gates(them) & to)
           st->gatesBB[them] ^= to;
-      if (seirawan_gating() && !count_in_hand(us, ALL_PIECES) && !captures_to_hand())
+      if (seirawan_gating() && count_in_hand(us, ALL_PIECES) == 0 && !captures_to_hand())
           st->gatesBB[us] = 0;
   }
 
