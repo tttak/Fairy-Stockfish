@@ -726,6 +726,18 @@ inline Value Position::checkmate_value(int ply) const {
       // Niol
       return VALUE_DRAW;
   }
+  // Checkmate using virtual pieces
+  if (two_boards() && var->checkmateValue < VALUE_ZERO)
+  {
+      int virtualCount = 0;
+      for (PieceType pt : piece_types())
+          virtualCount += std::max(-count_in_hand(~sideToMove, pt), 0);
+
+      if (virtualCount > 2)
+          return VALUE_DRAW;
+      else if (virtualCount > 0)
+          return -VALUE_VIRTUAL_MATE + 10 * virtualCount + ply;
+  }
   // Return mate value
   return convert_mate_value(var->checkmateValue, ply);
 }

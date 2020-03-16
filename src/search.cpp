@@ -261,7 +261,7 @@ void MainThread::search() {
 
   if (rootPos.two_boards() && !Threads.abort && Options["Protocol"] == "xboard")
   {
-      while (!Threads.stop && (Partner.sitRequested || Partner.weDead) && Time.elapsed() < Limits.time[us] - 1000)
+      while (!Threads.stop && (Partner.sitRequested || (Partner.weDead && !Partner.partnerDead)) && Time.elapsed() < Limits.time[us] - 1000)
       {}
   }
 
@@ -586,15 +586,37 @@ void Thread::search() {
                   Partner.ptell("x");
                   Partner.weDead = false;
               }
-              else if (!Partner.weWin && bestValue >= VALUE_MATE_IN_MAX_PLY && Limits.time[~us] < Partner.time * 10)
+              else if (!Partner.weWin && bestValue >= VALUE_MATE_IN_MAX_PLY && Limits.time[~us] < Partner.time)
               {
                   Partner.ptell("sit");
                   Partner.weWin = true;
               }
-              else if (Partner.weWin && (bestValue < VALUE_MATE_IN_MAX_PLY || Limits.time[~us] > Partner.time * 10))
+              else if (Partner.weWin && (bestValue < VALUE_MATE_IN_MAX_PLY || Limits.time[~us] > Partner.time))
               {
                   Partner.ptell("x");
                   Partner.weWin = false;
+              }
+              else if (!Partner.weVirtualWin && bestValue >= VALUE_VIRTUAL_MATE_IN_MAX_PLY && Limits.time[us] > Partner.opptime)
+              {
+                  Partner.ptell("fast");
+                  Partner.weVirtualWin = true;
+              }
+              else if (Partner.weVirtualWin && (bestValue < VALUE_VIRTUAL_MATE_IN_MAX_PLY || Limits.time[us] < Partner.opptime))
+              {
+                  Partner.ptell("slow");
+                  Partner.weVirtualWin = false;
+              }
+              else if (!Partner.weVirtualLoss && bestValue <= -VALUE_VIRTUAL_MATE_IN_MAX_PLY && Limits.time[~us] > Partner.time)
+              {
+                  Partner.ptell("sit");
+                  Partner.weVirtualLoss = true;
+                  Partner.fast = true;
+              }
+              else if (Partner.weVirtualLoss && (bestValue > -VALUE_VIRTUAL_MATE_IN_MAX_PLY || Limits.time[~us] < Partner.time))
+              {
+                  Partner.ptell("x");
+                  Partner.weVirtualLoss = false;
+                  Partner.fast = false;
               }
           }
 
@@ -1967,7 +1989,7 @@ void MainThread::check_time() {
 
   if (   rootPos.two_boards()
       && Time.elapsed() < Limits.time[rootPos.side_to_move()] - 1000
-      && (Partner.sitRequested || Partner.weDead))
+      && (Partner.sitRequested || (Partner.weDead && !Partner.partnerDead) || Partner.weVirtualWin))
       return;
 
   if (   (Limits.use_time_management() && (elapsed > Time.maximum() - 10 || stopOnPonderhit))
