@@ -74,7 +74,7 @@ namespace {
   ExtMove* generate_drops(const Position& pos, ExtMove* moveList, PieceType pt, Bitboard b) {
     assert(Type != CAPTURES);
     // Do not generate virtual drops for perft and at root
-    if (pos.count_in_hand(Us, pt) > 0 || (Type != NON_EVASIONS && Type != EVASIONS && pos.two_boards() && pos.virtual_drop(Us, pt)))
+    if (pos.count_in_hand(Us, pt) > 0 || (Type != NON_EVASIONS && pos.two_boards() && pos.allow_virtual_drop(Us, pt)))
     {
         // Restrict to valid target
         b &= pos.drop_region(Us, pt);
@@ -550,7 +550,7 @@ ExtMove* generate<LEGAL>(const Position& pos, ExtMove* moveList) {
   moveList = pos.checkers() ? generate<EVASIONS    >(pos, moveList)
                             : generate<NON_EVASIONS>(pos, moveList);
   while (cur != moveList)
-      if (!pos.legal(*cur))
+      if (!pos.legal(*cur) || pos.virtual_drop(*cur))
           *cur = (--moveList)->move;
       else
           ++cur;

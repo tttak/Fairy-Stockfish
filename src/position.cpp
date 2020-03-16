@@ -630,7 +630,7 @@ const string Position::fen(bool sfen, bool showPromoted, int countStarted, std::
       ss << (sideToMove == WHITE ? " b " : " w ");
       for (Color c : {WHITE, BLACK})
           for (PieceType pt = KING; pt >= PAWN; --pt)
-              if (pieceCountInHand[c][pt])
+              if (pieceCountInHand[c][pt] > 0)
               {
                   if (pieceCountInHand[c][pt] > 1)
                       ss << pieceCountInHand[c][pt];
@@ -1029,7 +1029,7 @@ bool Position::pseudo_legal(const Move m) const {
       return   piece_drops()
             && pc != NO_PIECE
             && color_of(pc) == us
-            && (count_in_hand(us, in_hand_piece_type(m)) > 0 || (two_boards() && virtual_drop(us, type_of(pc))))
+            && (count_in_hand(us, in_hand_piece_type(m)) > 0 || (two_boards() && allow_virtual_drop(us, type_of(pc))))
             && (drop_region(us, type_of(pc)) & ~pieces() & to)
             && (   type_of(pc) == in_hand_piece_type(m)
                 || (drop_promoted() && type_of(pc) == promoted_piece_type(in_hand_piece_type(m))));
