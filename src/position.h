@@ -1167,7 +1167,11 @@ inline bool Position::bikjang() const {
 inline bool Position::allow_virtual_drop(Color c, PieceType pt) const {
   assert(two_boards());
   // Do we allow a virtual drop?
-  return pt != KING && count_in_hand(c, pt) >= -1;
+  return pt != KING && (  std::min(count_in_hand(c, PAWN), 0)
+                        + std::min(count_in_hand(c, KNIGHT), 0)
+                        + std::min(count_in_hand(c, BISHOP), 0)
+                        + std::min(count_in_hand(c, ROOK), 0)
+                        + std::min(count_in_hand(c, QUEEN), 0)) >= -1;
 }
 
 inline Value Position::material_counting_result() const {
