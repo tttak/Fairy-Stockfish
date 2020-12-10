@@ -350,7 +350,7 @@ Position& Position::set(const Variant* v, const string& fenStr, bool isChess960,
                   st->gatesBB[c] |= count<KING>(c) ? square<KING>(c) : make_square(FILE_E, castling_rank(c));
               // Do not set castling rights for gates unless there are no pieces in hand,
               // which means that the file is referring to a chess960 castling right.
-              else if (!seirawan_gating() || count_in_hand(c, ALL_PIECES) || captures_to_hand())
+              else if (!seirawan_gating() || count_in_hand(c, ALL_PIECES) > 0 || captures_to_hand())
                   continue;
           }
 
@@ -361,7 +361,7 @@ Position& Position::set(const Variant* v, const string& fenStr, bool isChess960,
       // Set castling rights for 960 gating variants
       if (gating() && castling_enabled())
           for (Color c : {WHITE, BLACK})
-              if ((gates(c) & pieces(KING)) && !castling_rights(c) && (!seirawan_gating() || count_in_hand(c, ALL_PIECES) || captures_to_hand()))
+              if ((gates(c) & pieces(KING)) && !castling_rights(c) && (!seirawan_gating() || count_in_hand(c, ALL_PIECES) > 0 || captures_to_hand()))
               {
                   Bitboard castling_rooks = gates(c) & pieces(castling_rook_piece());
                   while (castling_rooks)
@@ -666,7 +666,7 @@ const string Position::fen(bool sfen, bool showPromoted, int countStarted, std::
   if (can_castle(WHITE_OOO))
       ss << (chess960 ? char('A' + file_of(castling_rook_square(WHITE_OOO))) : 'Q');
 
-  if (gating() && gates(WHITE) && (!seirawan_gating() || count_in_hand(WHITE, ALL_PIECES) || captures_to_hand()))
+  if (gating() && gates(WHITE) && (!seirawan_gating() || count_in_hand(WHITE, ALL_PIECES) > 0 || captures_to_hand()))
       for (File f = FILE_A; f <= max_file(); ++f)
           if (gates(WHITE) & file_bb(f))
               ss << char('A' + f);
@@ -677,7 +677,7 @@ const string Position::fen(bool sfen, bool showPromoted, int countStarted, std::
   if (can_castle(BLACK_OOO))
       ss << (chess960 ? char('a' + file_of(castling_rook_square(BLACK_OOO))) : 'q');
 
-  if (gating() && gates(BLACK) && (!seirawan_gating() || count_in_hand(BLACK, ALL_PIECES) || captures_to_hand()))
+  if (gating() && gates(BLACK) && (!seirawan_gating() || count_in_hand(BLACK, ALL_PIECES) > 0 || captures_to_hand()))
       for (File f = FILE_A; f <= max_file(); ++f)
           if (gates(BLACK) & file_bb(f))
               ss << char('a' + f);
@@ -2178,6 +2178,19 @@ bool Position::is_immediate_game_end(Value& result, int ply) const {
   {
       result = mate_in(ply);
       return true;
+  }
+  // Failing to checkmate with virtual pieces is a loss
+  if (two_boards() && !checkers())
+  {
+      int virtualCount = 0;
+      for (PieceType pt : piece_types())
+          virtualCount += std::max(-count_in_hand(~sideToMove, pt), 0);
+
+      if (virtualCount > 0)
+      {
+          result = mate_in(ply);
+          return true;
+      }
   }
 
   return false;

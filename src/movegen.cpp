@@ -30,7 +30,7 @@ namespace {
     if (pos.arrow_gating())
     {
         for (PieceType pt_gating : pos.piece_types())
-            if (pos.count_in_hand(us, pt_gating))
+            if (pos.count_in_hand(us, pt_gating) > 0)
             {
                 Bitboard b = pos.drop_region(us, pt_gating) & moves_bb(us, type_of(pos.piece_on(from)), to, pos.pieces() ^ from) & ~(pos.pieces() ^ from);
                 while (b)
@@ -88,7 +88,7 @@ namespace {
             while (b2)
                 *moveList++ = make_drop(pop_lsb(&b2), pt, pos.promoted_piece_type(pt));
         }
-        if (Type == QUIET_CHECKS)
+        if (Type == QUIET_CHECKS || pos.count_in_hand(Us, pt) <= 0)
             b &= pos.check_squares(pt);
         while (b)
             *moveList++ = make_drop(pop_lsb(&b), pt, pt);
@@ -370,7 +370,7 @@ namespace {
         if (pt != PAWN && pt != KING)
             moveList = generate_moves<Us, Checks>(pos, moveList, pt, target);
     // generate drops
-    if (pos.piece_drops() && Type != CAPTURES && (pos.count_in_hand(Us, ALL_PIECES) || pos.two_boards()))
+    if (pos.piece_drops() && Type != CAPTURES && (pos.count_in_hand(Us, ALL_PIECES) > 0 || pos.two_boards()))
         for (PieceType pt : pos.piece_types())
             moveList = generate_drops<Us, Type>(pos, moveList, pt, target & ~pos.pieces(~Us));
 
