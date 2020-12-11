@@ -261,9 +261,10 @@ namespace {
   constexpr Score Outpost[] = { S(56, 34), S(31, 23) };
 
   // PassedRank[Rank] contains a bonus according to the rank of a passed pawn
-  constexpr Score PassedRank[RANK_NB] = {
+  Score PassedRank[RANK_NB] = {
     S(0, 0), S(9, 28), S(15, 31), S(17, 39), S(64, 70), S(171, 177), S(277, 260)
   };
+  TUNE(SetRange(0, 500), PassedRank);
 
   // RookOnFile[semiopen/open] contains bonuses for each rook when there is
   // no (friendly) pawn on the rook file.
