@@ -308,6 +308,8 @@ namespace {
   constexpr Score KingProximity        = S(2, 4);
   constexpr Score EndgameKingProximity = S(0, 10);
   constexpr Score ConnectedSoldier     = S(20, 20);
+  Score HordeImbalance[]       = { S(70, 70), S(70, 70), S(70, 70), S(70, 70) };
+  TUNE(SetRange(0, 400), HordeImbalance);
 
   constexpr int VirtualCheck = 600;
 
@@ -1178,7 +1180,7 @@ namespace {
                 for (File f = FILE_A; f <= pos.max_file(); ++f)
                 {
                     l = m; m = r; r = popcount(pos.pieces(Us, PAWN) & shift<EAST>(file_bb(f)));
-                    score -= make_score(70, 70) * m / (1 + l * r);
+                    score -= HordeImbalance[edge_distance(f, pos.max_file())] * m / (1 + l * r);
                 }
             }
             else if (pos.count<PAWN>(Them) == pos.count<ALL_PIECES>(Them) && pos.pieces(Us, ROOK, QUEEN))
