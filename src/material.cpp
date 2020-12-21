@@ -29,7 +29,7 @@ namespace {
 
   // Polynomial material imbalance parameters
 
-  constexpr Score QuadraticOurs[][PIECE_TYPE_NB] = {
+  Score QuadraticOurs[][PIECE_TYPE_NB] = {
     //            OUR PIECES
     // pair pawn knight bishop rook queen
     {S(1419, 1455)                                                                  }, // Bishop pair
@@ -40,7 +40,7 @@ namespace {
     {S(-210, -211), S( 37,  14), S(147, 141), S(161, 105), S(-158, -174), S(-9,-31) }  // Queen
   };
 
-  constexpr Score QuadraticTheirs[][PIECE_TYPE_NB] = {
+  Score QuadraticTheirs[][PIECE_TYPE_NB] = {
     //           THEIR PIECES
     // pair pawn knight bishop rook queen
     {                                                                               }, // Bishop pair
@@ -50,6 +50,9 @@ namespace {
     {S(  26,  35), S(  6,  22), S( 38,  39), S(-12,  -2)                            }, // Rook
     {S(  97,  93), S(100, 163), S(-58, -91), S(112, 192), S(276, 225)               }  // Queen
   };
+
+  auto myrange = [](int m){return m == 0 ? std::pair<int, int>(0, 0) : std::pair<int, int>(-500 - 2 * std::abs(m), 500 + 2 * std::abs(m));};
+  TUNE(SetRange(myrange), QuadraticOurs, QuadraticTheirs);
 
   #undef S
 
