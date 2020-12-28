@@ -507,7 +507,9 @@ namespace {
         // Penalty if the piece is far from the kings in drop variants
         if ((pos.captures_to_hand() || pos.two_boards()) && pos.count<KING>(Them) && pos.count<KING>(Us))
         {
-            if (!(b & (kingRing[Us] | kingRing[Them])))
+            if (b & (kingRing[Us] | kingRing[Them]))
+                score += KingProximity * popcount(b & (kingRing[Us] | kingRing[Them]));
+            else
                 score -= KingProximity * distance(s, pos.square<KING>(Us)) * distance(s, pos.square<KING>(Them));
         }
 
