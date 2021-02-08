@@ -1120,10 +1120,6 @@ moves_loop: // When in check, search starts from here
           // Reduced depth of the next LMR search
           int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount), 0);
 
-          if (pos.must_capture() && pos.attackers_to(to_sq(move), ~us))
-          {}
-          else
-
           if (   captureOrPromotion
               || givesCheck)
           {
@@ -1137,7 +1133,7 @@ moves_loop: // When in check, search starts from here
               if (!pos.see_ge(move, Value(-218 - 120 * pos.captures_to_hand()) * depth)) // (~25 Elo)
                   continue;
           }
-          else
+          else if (!(pos.must_capture() && pos.attackers_to(to_sq(move), ~us)))
           {
               // Countermoves based pruning (~20 Elo)
               if (   lmrDepth < 4 + ((ss-1)->statScore > 0 || (ss-1)->moveCount == 1)
