@@ -60,9 +60,6 @@ struct StateInfo {
   Bitboard   checkersBB;
   Piece      capturedPiece;
   Piece      unpromotedCapturedPiece;
-  Piece      unpromotedBycatch[SQUARE_NB];
-  Bitboard   promotedBycatch;
-  Bitboard   demotedBycatch;
   StateInfo* previous;
   Bitboard   blockersForKing[COLOR_NB];
   Bitboard   pinners[COLOR_NB];

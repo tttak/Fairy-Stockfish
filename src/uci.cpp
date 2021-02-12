@@ -315,7 +315,7 @@ void UCI::loop(int argc, char* argv[]) {
                                            token == "usi"  ? "minishogi"
                                          : token == "ucci" ? "minixiangqi"
 #endif
-                                                           : "chess");
+                                                           : "minishogi");
           Options["UCI_Variant"].set_default(defaultVariant);
           if (token == "uci" || token == "usi" || token == "ucci")
               sync_cout << "id name " << engine_info(true)
@@ -343,8 +343,6 @@ void UCI::loop(int argc, char* argv[]) {
       else if (token == "d")        sync_cout << pos << sync_endl;
       else if (token == "eval")     trace_eval(pos);
       else if (token == "compiler") sync_cout << compiler_info() << sync_endl;
-      else if (token == "load")     { load(is); argc = 1; } // continue reading stdin
-      else if (token == "check")    check(is);
       // UCI-Cyclone omits the "position" keyword
       else if (token == "fen" || token == "startpos")
       {

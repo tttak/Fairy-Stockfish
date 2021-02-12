@@ -569,34 +569,6 @@ void Thread::search() {
           if (rootMoves.size() == 1)
               totalTime = std::min(500.0, totalTime);
 
-          if (completedDepth >= 8 && rootPos.two_boards() && Options["Protocol"] == "xboard")
-          {
-              if (Limits.time[us])
-                  Partner.ptell<FAIRY>("time " + std::to_string((Limits.time[us] - Time.elapsed()) / 10));
-              if (Limits.time[~us])
-                  Partner.ptell<FAIRY>("otim " + std::to_string(Limits.time[~us] / 10));
-              if (!Partner.weDead && bestValue <= VALUE_MATED_IN_MAX_PLY)
-              {
-                  Partner.ptell("dead");
-                  Partner.weDead = true;
-              }
-              else if (Partner.weDead && bestValue > VALUE_MATED_IN_MAX_PLY)
-              {
-                  Partner.ptell("x");
-                  Partner.weDead = false;
-              }
-              else if (!Partner.weWin && bestValue >= VALUE_MATE_IN_MAX_PLY && Limits.time[~us] < Partner.time * 10)
-              {
-                  Partner.ptell("sit");
-                  Partner.weWin = true;
-              }
-              else if (Partner.weWin && (bestValue < VALUE_MATE_IN_MAX_PLY || Limits.time[~us] > Partner.time * 10))
-              {
-                  Partner.ptell("x");
-                  Partner.weWin = false;
-              }
-          }
-
           // Stop the search if we have exceeded the totalTime
           if (Time.elapsed() > totalTime)
           {
@@ -903,14 +875,10 @@ namespace {
                ? ss->staticEval > (ss-4)->staticEval || (ss-4)->staticEval == VALUE_NONE
                : ss->staticEval > (ss-2)->staticEval;
 
-    // Skip early pruning in case of mandatory capture
-    if (pos.must_capture() && pos.has_capture())
-        goto moves_loop;
-
     // Step 7. Futility pruning: child node (~50 Elo)
     if (   !PvNode
-        &&  depth < 9 - 3 * pos.blast_on_capture()
-        &&  eval - futility_margin(depth, improving) * (1 + pos.check_counting() + 2 * pos.must_capture() + pos.extinction_single_piece() + !pos.checking_permitted()) >= beta
+        &&  depth < 9
+        &&  eval - futility_margin(depth, improving) >= beta
         &&  eval < VALUE_KNOWN_WIN) // Do not return unproven wins
         return eval;
 
@@ -920,17 +888,15 @@ namespace {
         && (ss-1)->statScore < 22977
         &&  eval >= beta
         &&  eval >= ss->staticEval
-        &&  ss->staticEval >= beta - 30 * depth - 28 * improving + 84 * ss->ttPv + 168 + 200 * (!pos.double_step_enabled() && pos.piece_to_char()[PAWN] != ' ')
+        &&  ss->staticEval >= beta - 30 * depth - 28 * improving + 84 * ss->ttPv + 168
         && !excludedMove
         &&  pos.non_pawn_material(us)
-        &&  pos.count<ALL_PIECES>(~us) != pos.count<PAWN>(~us)
-        && !pos.flip_enclosed_pieces()
         && (ss->ply >= thisThread->nmpMinPly || us != thisThread->nmpColor))
     {
         assert(eval - beta >= 0);
 
         // Null move dynamic reduction based on depth and value
-        Depth R = (1015 - 300 * pos.must_capture() - 250 * !pos.checking_permitted() + 85 * depth) / 256 + std::min(int(eval - beta) / 191, pos.must_capture() || pos.blast_on_capture() ? 0 : 3);
+        Depth R = (1015 + 85 * depth) / 256 + std::min(int(eval - beta) / 191, 3);
 
         ss->currentMove = MOVE_NULL;
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];

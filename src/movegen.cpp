@@ -26,30 +26,7 @@ namespace {
   template<MoveType T>
   ExtMove* make_move_and_gating(const Position& pos, ExtMove* moveList, Color us, Square from, Square to) {
 
-    // Arrow gating moves
-    if (pos.arrow_gating())
-    {
-        for (PieceType pt_gating : pos.piece_types())
-            if (pos.count_in_hand(us, pt_gating))
-            {
-                Bitboard b = pos.drop_region(us, pt_gating) & moves_bb(us, type_of(pos.piece_on(from)), to, pos.pieces() ^ from) & ~(pos.pieces() ^ from);
-                while (b)
-                    *moveList++ = make_gating<T>(from, to, pt_gating, pop_lsb(&b));
-            }
-        return moveList;
-    }
-
     *moveList++ = make<T>(from, to);
-
-    // Gating moves
-    if (pos.seirawan_gating() && (pos.gates(us) & from))
-        for (PieceType pt_gating : pos.piece_types())
-            if (pos.count_in_hand(us, pt_gating) && (pos.drop_region(us, pt_gating) & from))
-                *moveList++ = make_gating<T>(from, to, pt_gating, from);
-    if (pos.seirawan_gating() && T == CASTLING && (pos.gates(us) & to))
-        for (PieceType pt_gating : pos.piece_types())
-            if (pos.count_in_hand(us, pt_gating) && (pos.drop_region(us, pt_gating) & to))
-                *moveList++ = make_gating<T>(from, to, pt_gating, to);
 
     return moveList;
   }
@@ -384,49 +361,6 @@ namespace {
                       | (pos.moves_from(Us, KING, ksq) & ~pos.pieces())) & target;
         while (b)
             moveList = make_move_and_gating<NORMAL>(pos, moveList, Us, ksq, pop_lsb(&b));
-
-        // Passing move by king
-        if (pos.pass())
-            *moveList++ = make<SPECIAL>(ksq, ksq);
-
-        if ((Type != CAPTURES) && pos.can_castle(Us & ANY_CASTLING))
-            for (CastlingRights cr : { Us & KING_SIDE, Us & QUEEN_SIDE } )
-                if (!pos.castling_impeded(cr) && pos.can_castle(cr))
-                    moveList = make_move_and_gating<CASTLING>(pos, moveList, Us,ksq, pos.castling_rook_square(cr));
-    }
-    // Workaround for passing: Execute a non-move with any piece
-    else if (pos.pass() && !pos.count<KING>(Us) && pos.pieces(Us))
-        *moveList++ = make<SPECIAL>(lsb(pos.pieces(Us)), lsb(pos.pieces(Us)));
-
-    // Castling with non-king piece
-    if (!pos.count<KING>(Us) && Type != CAPTURES && pos.can_castle(Us & ANY_CASTLING))
-    {
-        Square from = pos.castling_king_square(Us);
-        for(CastlingRights cr : { Us & KING_SIDE, Us & QUEEN_SIDE } )
-            if (!pos.castling_impeded(cr) && pos.can_castle(cr))
-                moveList = make_move_and_gating<CASTLING>(pos, moveList, Us, from, pos.castling_rook_square(cr));
-    }
-
-    // Special moves
-    if (pos.cambodian_moves() && pos.gates(Us))
-    {
-        if (Type != CAPTURES && Type != EVASIONS && (pos.pieces(Us, KING) & pos.gates(Us)))
-        {
-            Square from = pos.square<KING>(Us);
-            Bitboard b = PseudoAttacks[WHITE][KNIGHT][from] & rank_bb(rank_of(from + (Us == WHITE ? NORTH : SOUTH)))
-                        & target & ~pos.pieces();
-            while (b)
-                moveList = make_move_and_gating<SPECIAL>(pos, moveList, Us, from, pop_lsb(&b));
-        }
-
-        Bitboard b = pos.pieces(Us, FERS) & pos.gates(Us);
-        while (b)
-        {
-            Square from = pop_lsb(&b);
-            Square to = from + 2 * (Us == WHITE ? NORTH : SOUTH);
-            if (is_ok(to) && (target & to))
-                moveList = make_move_and_gating<SPECIAL>(pos, moveList, Us, from, to);
-        }
     }
 
     return moveList;
@@ -499,22 +433,6 @@ ExtMove* generate<EVASIONS>(const Position& pos, ExtMove* moveList) {
   Square ksq = pos.square<KING>(us);
   Bitboard sliderAttacks = 0;
   Bitboard sliders = pos.checkers();
-
-  // Passing move by king in bikjang
-  if (pos.bikjang() && pos.pass())
-      *moveList++ = make<SPECIAL>(ksq, ksq);
-
-  // Consider all evasion moves for special pieces
-  if (sliders & pos.non_sliding_riders())
-  {
-      Bitboard target = pos.board_bb() & ~pos.pieces(us);
-      Bitboard b = (  (pos.attacks_from(us, KING, ksq) & pos.pieces())
-                    | (pos.moves_from(us, KING, ksq) & ~pos.pieces())) & target;
-      while (b)
-          moveList = make_move_and_gating<NORMAL>(pos, moveList, us, ksq, pop_lsb(&b));
-      return us == WHITE ? generate_all<WHITE, EVASIONS>(pos, moveList)
-                         : generate_all<BLACK, EVASIONS>(pos, moveList);
-  }
 
   // Find all the squares attacked by slider checkers. We will remove them from
   // the king evasions in order to skip known illegal moves, which avoids any
