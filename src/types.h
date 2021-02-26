@@ -518,7 +518,8 @@ enum Square : int {
   SQUARE_BIT_MASK = 63,
 #endif
   SQ_MAX = SQUARE_NB - 1,
-  SQUARE_NB_CHESS = 64
+  SQUARE_NB_CHESS = 64,
+  SQUARE_NB_SHOGI = 81
 };
 
 enum Direction : int {

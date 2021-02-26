@@ -23,20 +23,28 @@
 
 namespace Eval::NNUE::Features {
 
-  // Map square to numbering on 8x8 board
-  constexpr Square map_to_standard_board(Square s) {
-    return Square(s - rank_of(s) * (FILE_MAX - FILE_H));
+  inline Square rotate(Square s) {
+    return Square(SQUARE_NB_SHOGI - 1 - s);
+  }
+
+  inline Square toShogiSquare(Square s) {
+    return Square((8 - s % 12) * 9 + 8 - s / 12);
   }
 
   // Orient a square according to perspective (rotates by 180 for black)
-  inline Square orient(const Position& pos, Color perspective, Square s) {
-    return map_to_standard_board(  perspective == WHITE || (pos.capture_the_flag(BLACK) & Rank8BB) ? s
-                                 : flip_rank(flip_file(s, pos.max_file()), pos.max_rank()));
+  inline Square orient(Color perspective, Square s) {
+    return perspective == WHITE ? s : rotate(s);
   }
 
   // Index of a feature for a given king position and another piece on some square
-  inline IndexType make_index(const Position& pos, Color perspective, Square s, Piece pc, Square ksq) {
-    return IndexType(orient(pos, perspective, s) + kpp_board_index[perspective][pc] + PS_END * ksq);
+  inline IndexType make_index(Color perspective, Square s, Piece pc, Square ksq) {
+    s = toShogiSquare(s);
+    return IndexType(orient(perspective, s) + shogi_kpp_board_index[perspective][pc] + SHOGI_PS_END * ksq);
+  }
+
+  inline IndexType make_index(Color perspective, Color c, int hand_index, PieceType pt, Square ksq) {
+    Color color = (c == perspective) ? WHITE : BLACK;
+    return IndexType(hand_index - 1 + shogi_kpp_hand_index[color][pt] + SHOGI_PS_END * ksq);
   }
 
   // Get a list of indices for active features
@@ -44,11 +52,20 @@ namespace Eval::NNUE::Features {
   void HalfKP<AssociatedKing>::AppendActiveIndices(
       const Position& pos, Color perspective, IndexList* active) {
 
-    Square ksq = orient(pos, perspective, pos.square(perspective, pos.nnue_king()));
-    Bitboard bb = pos.pieces() & ~pos.pieces(pos.nnue_king());
+    Square ksq = orient(perspective, toShogiSquare(pos.square<KING>(perspective)));
+
+    Bitboard bb = pos.pieces() & ~pos.pieces(KING);
     while (bb) {
       Square s = pop_lsb(&bb);
-      active->push_back(make_index(pos, perspective, s, pos.piece_on(s), ksq));
+      active->push_back(make_index(perspective, s, pos.piece_on(s), ksq));
+    }
+
+    for (Color c : {WHITE, BLACK}) {
+      for (PieceType pt : {SHOGI_PAWN, LANCE, SHOGI_KNIGHT, SILVER, GOLD, BISHOP, ROOK}) {
+        for (int i = 1; i <= pos.count_in_hand(c, pt); i++) {
+          active->push_back(make_index(perspective, c, i, pt, ksq));
+        }
+      }
     }
   }
 
@@ -57,16 +74,7 @@ namespace Eval::NNUE::Features {
   void HalfKP<AssociatedKing>::AppendChangedIndices(
       const Position& pos, const DirtyPiece& dp, Color perspective,
       IndexList* removed, IndexList* added) {
-
-    Square ksq = orient(pos, perspective, pos.square(perspective, pos.nnue_king()));
-    for (int i = 0; i < dp.dirty_num; ++i) {
-      Piece pc = dp.piece[i];
-      if (type_of(pc) == pos.nnue_king()) continue;
-      if (dp.from[i] != SQ_NONE)
-        removed->push_back(make_index(pos, perspective, dp.from[i], pc, ksq));
-      if (dp.to[i] != SQ_NONE)
-        added->push_back(make_index(pos, perspective, dp.to[i], pc, ksq));
-    }
+    // TODO Incremental computation
   }
 
   template class HalfKP<Side::kFriend>;
