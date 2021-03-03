@@ -248,10 +248,6 @@ namespace Eval::NNUE {
       // of the estimated gain in terms of features to be added/subtracted.
       StateInfo *st = pos.state(), *next = nullptr;
       int gain = pos.count<ALL_PIECES>() - 2;
-
-      // TODO Incremental computation
-      st->accumulator.state[c] = INIT;
-
       while (st->accumulator.state[c] == EMPTY)
       {
         auto& dp = st->dirtyPiece;

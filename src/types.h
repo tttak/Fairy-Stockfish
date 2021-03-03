@@ -568,6 +568,7 @@ struct DirtyPiece {
   // both the pawn and the captured piece to SQ_NONE and the piece promoted
   // to from SQ_NONE to the capture square.
   Piece piece[12];
+  Piece pieceToHand[12];
 
   // From and to squares, which may be SQ_NONE
   Square from[12];

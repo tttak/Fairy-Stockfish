@@ -1347,6 +1347,11 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
           add_to_hand(pieceToHand);
           k ^=  Zobrist::inHand[pieceToHand][pieceCountInHand[color_of(pieceToHand)][type_of(pieceToHand)] - 1]
               ^ Zobrist::inHand[pieceToHand][pieceCountInHand[color_of(pieceToHand)][type_of(pieceToHand)]];
+
+          if (Eval::useNNUE)
+          {
+              dp.pieceToHand[1] = pieceToHand;
+          }
       }
 
       // Update material hash key and prefetch access to materialTable

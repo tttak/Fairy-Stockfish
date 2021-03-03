@@ -74,7 +74,29 @@ namespace Eval::NNUE::Features {
   void HalfKP<AssociatedKing>::AppendChangedIndices(
       const Position& pos, const DirtyPiece& dp, Color perspective,
       IndexList* removed, IndexList* added) {
-    // TODO Incremental computation
+
+    Square ksq = orient(perspective, toShogiSquare(pos.square<KING>(perspective)));
+    for (int i = 0; i < dp.dirty_num; ++i) {
+      Piece pc = dp.piece[i];
+      if (type_of(pc) == KING) continue;
+
+      if (dp.from[i] != SQ_NONE) {
+        removed->push_back(make_index(perspective, dp.from[i], pc, ksq));
+      }
+      // drop
+      else if (dp.dirty_num == 1) {
+        removed->push_back(make_index(perspective, color_of(pc), pos.count_in_hand(color_of(pc), type_of(pc)) + 1, type_of(pc), ksq));
+      }
+
+      if (dp.to[i] != SQ_NONE) {
+        added->push_back(make_index(perspective, dp.to[i], pc, ksq));
+      }
+      // capture
+      else if (i == 1) {
+        Piece pieceToHand = dp.pieceToHand[i];
+        added->push_back(make_index(perspective, color_of(pieceToHand), pos.count_in_hand(color_of(pieceToHand), type_of(pieceToHand)), type_of(pieceToHand), ksq));
+      }
+    }
   }
 
   template class HalfKP<Side::kFriend>;
