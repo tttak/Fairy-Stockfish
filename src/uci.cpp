@@ -32,6 +32,7 @@
 #include "uci.h"
 #include "xboard.h"
 #include "syzygy/tbprobe.h"
+#include "nnue/nnue_test_command.h"
 
 using namespace std;
 
@@ -258,6 +259,13 @@ namespace {
         variants.parse<true>(token);
   }
 
+  void test_cmd(Position& pos, istringstream& is) {
+    std::string param;
+    is >> param;
+
+    if (param == "nnue") Eval::NNUE::TestCommand(pos, is);
+  }
+
 } // namespace
 
 
@@ -345,6 +353,11 @@ void UCI::loop(int argc, char* argv[]) {
       else if (token == "compiler") sync_cout << compiler_info() << sync_endl;
       else if (token == "load")     { load(is); argc = 1; } // continue reading stdin
       else if (token == "check")    check(is);
+
+      // UCI extended command for test
+      // "test nnue test_features"
+      else if (token == "test")     test_cmd(pos, is);
+
       // UCI-Cyclone omits the "position" keyword
       else if (token == "fen" || token == "startpos")
       {
