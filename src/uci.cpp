@@ -141,10 +141,21 @@ namespace {
             while (is >> token)
                 limits.searchmoves.push_back(UCI::to_move(pos, token));
 
+// standard
+#if 0
         else if (token == "wtime")     is >> limits.time[WHITE];
         else if (token == "btime")     is >> limits.time[BLACK];
         else if (token == "winc")      is >> limits.inc[WHITE];
         else if (token == "binc")      is >> limits.inc[BLACK];
+
+// for Japanese Shogi GUIs (swap WHITE and BLACK)
+#else
+        else if (token == "wtime")     is >> limits.time[BLACK];
+        else if (token == "btime")     is >> limits.time[WHITE];
+        else if (token == "winc")      is >> limits.inc[BLACK];
+        else if (token == "binc")      is >> limits.inc[WHITE];
+#endif
+
         else if (token == "movestogo") is >> limits.movestogo;
         else if (token == "depth")     is >> limits.depth;
         else if (token == "nodes")     is >> limits.nodes;
@@ -301,8 +312,10 @@ void UCI::loop(int argc, char* argv[]) {
       token.clear(); // Avoid a stale if getline() returns empty or blank line
       is >> skipws >> token;
 
+      // for Japanese Shogi GUIs (support gameover command)
       if (    token == "quit"
-          ||  token == "stop")
+          ||  token == "stop"
+          ||  token == "gameover")
           Threads.stop = true;
 
       // The GUI sends 'ponderhit' to tell us the user has played the expected move.
